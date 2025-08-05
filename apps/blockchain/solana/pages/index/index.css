@@ -281,10 +281,146 @@ textarea.import-input {
   word-break: break-all;
   opacity: 0.9;
   cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .address-display:hover {
   opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 니모닉 컨테이너 */
+.mnemonic-container {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.mnemonic-label {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 8px;
+}
+
+.mnemonic-display {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  opacity: 0.9;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.copy-mnemonic-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-mnemonic-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 니모닉 화면 스타일 */
+.mnemonic-content {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.mnemonic-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.mnemonic-header h2 {
+  color: var(--coin-primary);
+  margin-bottom: 10px;
+}
+
+.mnemonic-header p {
+  color: #666;
+  font-size: 14px;
+}
+
+.mnemonic-card {
+  background: var(--coin-gradient);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.mnemonic-words {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 1.6;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  word-break: break-word;
+}
+
+.copy-mnemonic-btn-large {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.copy-mnemonic-btn-large:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.mnemonic-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.mnemonic-warning p {
+  color: #856404;
+  font-size: 14px;
+  margin: 0;
+}
+
+.continue-btn {
+  background: var(--coin-primary);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.continue-btn:hover {
+  background: var(--coin-secondary);
+  transform: translateY(-2px);
 }
 
 /* 액션 버튼 */
