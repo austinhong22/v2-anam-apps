@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Receive Coin</title>
+    <title>SOL 받기</title>
     <link rel="stylesheet" href="../../app.css" />
     <link rel="stylesheet" href="receive.css" />
   </head>
@@ -17,7 +17,7 @@
               <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-          <h1 class="header-title">Receive <span class="coin-symbol">COIN</span></h1>
+          <h1 class="header-title">SOL 받기</h1>
           <div style="width: 24px;"></div>
         </header>
 
@@ -30,17 +30,19 @@
           </div>
 
           <div class="address-section">
-            <div class="address-label">Address</div>
+            <div class="address-label">주소</div>
             <div class="receive-address-box">
-              <span id="receive-address">Loading...</span>
-              <button class="copy-btn" onclick="copyAddress()">Copy</button>
+              <span id="receive-address">로딩 중...</span>
+              <button class="copy-btn" onclick="copyAddress()">복사</button>
             </div>
           </div>
 
           <div class="receive-info">
-            <p>You can send <strong class="coin-name">COIN</strong> to this address.</p>
-            <p class="receive-warning">Sending other coins may result in loss of funds.</p>
+            <p>이 주소로 <strong class="coin-name">SOL</strong>을 전송할 수 있습니다.</p>
+            <p class="receive-warning">다른 코인을 전송하면 자금 손실이 발생할 수 있습니다.</p>
           </div>
+
+
         </div>
       </div>
     </div>

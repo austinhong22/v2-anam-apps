@@ -80,6 +80,15 @@
   word-break: break-all;
   color: #333;
   line-height: 1.4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+#receive-address:hover {
+  background: rgba(20, 241, 149, 0.1);
+  color: var(--coin-primary);
 }
 
 .copy-btn {

@@ -1,11 +1,11 @@
-// Receive 페이지 로직
+// SOL 받기 페이지 로직
 
 // 전역 변수
 let currentWallet = null;
 
 // 페이지 초기화
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Receive page loaded");
+  console.log("받기 페이지 로드됨");
 
   // 지갑 정보 로드
   loadWalletInfo();
@@ -21,14 +21,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // 지갑 정보 로드
 function loadWalletInfo() {
-  const walletKey = `${CoinConfig.symbol.toLowerCase()}_wallet`;
-  const walletData = localStorage.getItem(walletKey);
+  const walletData = localStorage.getItem("walletData");
 
   if (walletData) {
     currentWallet = JSON.parse(walletData);
-    console.log("Wallet loaded:", currentWallet.address);
+    console.log("지갑 로드됨:", currentWallet.address);
   } else {
-    showToast("No wallet found");
+    showToast("지갑을 찾을 수 없습니다");
     goBack();
   }
 }
@@ -46,11 +45,19 @@ function updateUI() {
   });
 
   // 타이틀 업데이트
-  document.title = `Receive ${CoinConfig.name}`;
+  document.title = "SOL 받기";
 
-  // 주소 표시
+  // 주소 표시 및 클릭 복사 기능
   if (currentWallet) {
-    document.getElementById('receive-address').textContent = currentWallet.address;
+    const addressElement = document.getElementById('receive-address');
+    addressElement.textContent = currentWallet.address;
+    
+    // 주소 클릭 시 복사 기능
+    addressElement.style.cursor = "pointer";
+    addressElement.onclick = () => {
+      navigator.clipboard.writeText(currentWallet.address);
+      showToast("지갑 주소가 복사되었습니다");
+    };
   }
 }
 
@@ -70,8 +77,8 @@ function generateQRCode() {
       correctLevel: QRCode.CorrectLevel.M
     });
   } catch (error) {
-    console.error('Failed to generate QR code:', error);
-    qrContainer.innerHTML = '<div style="padding: 20px; color: #999;">QR Code Generation Failed</div>';
+    console.error('QR 코드 생성 실패:', error);
+    qrContainer.innerHTML = '<div style="padding: 20px; color: #999;">QR 코드 생성 실패</div>';
   }
 }
 
@@ -94,11 +101,11 @@ function copyAddress() {
 
   navigator.clipboard.writeText(currentWallet.address)
     .then(() => {
-      showToast("Address copied");
+      showToast("주소가 복사되었습니다");
     })
     .catch(err => {
-      console.error('Copy failed:', err);
-      showToast("Failed to copy");
+      console.error('복사 실패:', err);
+      showToast("복사에 실패했습니다");
     });
 }
 

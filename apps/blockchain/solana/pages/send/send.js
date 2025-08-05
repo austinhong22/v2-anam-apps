@@ -1,4 +1,4 @@
-// Send 페이지 로직
+// SOL 전송 페이지 로직
 
 // 전역 변수
 let adapter = null;
@@ -6,17 +6,17 @@ let currentWallet = null;
 
 // 페이지 초기화
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("Send page loaded");
+  console.log("전송 페이지 로드됨");
 
   // 지갑 정보 로드
   loadWalletInfo();
 
   // Solana 어댑터 초기화
-  adapter = window.getAdapter();
+  adapter = new SolanaAdapter(CoinConfig);
   
   if (!adapter) {
-    console.error("SolanaAdapter not initialized");
-    showToast("Solana adapter initialization failed");
+    console.error("SolanaAdapter 초기화 실패");
+    showToast("Solana 어댑터 초기화에 실패했습니다");
   }
 
   // UI 초기화
@@ -25,14 +25,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // 지갑 정보 로드
 function loadWalletInfo() {
-  const walletKey = `${CoinConfig.symbol.toLowerCase()}_wallet`;
-  const walletData = localStorage.getItem(walletKey);
+  const walletData = localStorage.getItem("walletData");
 
   if (walletData) {
     currentWallet = JSON.parse(walletData);
-    console.log("Wallet loaded:", currentWallet.address);
+    console.log("지갑 로드됨:", currentWallet.address);
   } else {
-    showToast("No wallet found");
+    showToast("지갑을 찾을 수 없습니다");
     goBack();
   }
 }
@@ -45,16 +44,23 @@ async function updateUI() {
   });
 
   // 타이틀 업데이트
-  document.title = `Send ${CoinConfig.name}`;
+  document.title = "SOL 전송";
 
   // 잔액 업데이트
   if (currentWallet && adapter) {
     try {
-      const balance = await adapter.getBalance(currentWallet.address);
-      const formattedBalance = window.formatBalance(balance, CoinConfig.decimals);
-      document.getElementById('available-balance').textContent = formattedBalance;
+      const result = await adapter.getBalance(currentWallet.address);
+      
+      if (result.success) {
+        const formattedBalance = window.formatBalance(result.data, CoinConfig.decimals);
+        document.getElementById('available-balance').textContent = formattedBalance;
+      } else {
+        console.error("잔액 조회 실패:", result.error);
+        document.getElementById('available-balance').textContent = "0.0000";
+      }
     } catch (error) {
-      console.error("Failed to get balance:", error);
+      console.error("잔액 업데이트 실패:", error);
+      document.getElementById('available-balance').textContent = "0.0000";
     }
   }
 }
@@ -75,7 +81,7 @@ function goBack() {
 // 전송 확인
 async function confirmSend() {
   if (!currentWallet || !adapter) {
-    showToast("No wallet found");
+    showToast("지갑을 찾을 수 없습니다");
     return;
   }
 
@@ -85,45 +91,53 @@ async function confirmSend() {
 
   // 유효성 검증
   if (!recipient || !amount) {
-    showToast("Please enter recipient address and amount");
+    showToast("받는 주소와 금액을 입력해주세요");
     return;
   }
 
   if (!adapter.isValidAddress(recipient)) {
-    showToast("Invalid address format");
+    showToast("유효하지 않은 주소 형식입니다");
     return;
   }
 
-  if (parseFloat(amount) <= 0) {
-    showToast("Please enter amount greater than 0");
+  const amountValue = parseFloat(amount);
+  if (amountValue <= 0) {
+    showToast("0보다 큰 금액을 입력해주세요");
+    return;
+  }
+
+  // 잔액 확인
+  try {
+    const balanceResult = await adapter.getBalance(currentWallet.address);
+    if (balanceResult.success) {
+      const availableBalance = parseFloat(balanceResult.data);
+      if (amountValue > availableBalance) {
+        showToast("잔액이 부족합니다");
+        return;
+      }
+    }
+  } catch (error) {
+    console.error("잔액 확인 실패:", error);
+    showToast("잔액 확인에 실패했습니다");
     return;
   }
 
   try {
-    showToast("Sending transaction...");
+    showToast("트랜잭션 전송 중...");
 
-    // Solana는 고정 수수료 사용 (getGasPrice 미구현)
-    // 기본 수수료: 5000 lamports = 0.000005 SOL
-    const fee = "0.000005";
+    // SOL을 lamports로 변환
+    const lamports = Math.floor(amountValue * solanaWeb3.LAMPORTS_PER_SOL);
 
     // 트랜잭션 전송
-    const txParams = {
-      from: currentWallet.address,
-      to: recipient,
-      amount: amount,
-      privateKey: currentWallet.privateKey,
-    };
+    const result = await adapter.sendTx(recipient, lamports.toString());
 
-    // 수수료 관련 파라미터 추가
-    if (feeLevel && fee) {
-      txParams.fee = fee;
-      txParams.feePreference = feeLevel;
+    if (!result.success) {
+      showToast("트랜잭션 전송 실패: " + result.error);
+      return;
     }
 
-    const result = await adapter.sendTransaction(txParams);
-
-    showToast(`Transaction sent successfully!`);
-    console.log("Transaction hash:", result.hash);
+    showToast("트랜잭션이 성공적으로 전송되었습니다!");
+    console.log("트랜잭션 해시:", result.data.signature);
 
     // 메인 페이지로 돌아가기
     setTimeout(() => {
@@ -131,8 +145,8 @@ async function confirmSend() {
     }, 2000);
 
   } catch (error) {
-    console.error("Transaction failed:", error);
-    showToast("Transaction failed: " + error.message);
+    console.error("트랜잭션 실패:", error);
+    showToast("트랜잭션 실패: " + error.message);
   }
 }
 
