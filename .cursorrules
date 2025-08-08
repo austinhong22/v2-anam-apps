@@ -1,0 +1,26 @@
+# .cursor/rules/solana-wallet.rule
+# ------------------------------------------------------------------
+# 코딩 스타일
+Always write browser-compatible ES2020 JavaScript in strict mode.
+Use functional, immutable patterns where reasonable.
+
+# 문서화
+Add Korean JSDoc comments for every public function.
+
+# 테스트
+Write Vitest unit tests first; ensure tests pass before final code.
+
+# 에러 처리
+Wrap external-call errors in try/catch and return Result objects
+instead of throwing raw errors.
+
+# 번들
+Assume Vite with vite-plugin-node-polyfills is configured so that
+Buffer, process 등 Node 전역이 브라우저에서도 동작한다.
+
+# 출력 형식
+When modifying code, output the *entire* file content unless asked
+for 'patch' format. Include all imports at top of file.
+
+# 불필요한 설명 최소화
+Keep AI responses concise—focus on code, not prose.

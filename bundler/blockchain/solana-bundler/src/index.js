@@ -45,14 +45,14 @@ if (typeof window !== 'undefined') {
     derivePath,
     
     // 헬퍼 함수: 니모닉으로부터 Keypair 생성
-    keypairFromMnemonic: (mnemonic, accountIndex = 0) => {
-      // 니모닉 → 시드
-      const seed = bip39.mnemonicToSeedSync(mnemonic);
-      
+    keypairFromMnemonic: async (mnemonic, accountIndex = 0) => {
+      // 니모닉 → 시드 (비동기, 브라우저 호환)
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+
       // Solana 표준 파생 경로
       const path = `m/44'/501'/${accountIndex}'/0'`;
       const derivedSeed = derivePath(path, seed.toString('hex')).key;
-      
+
       // 시드 → Keypair
       return Keypair.fromSeed(derivedSeed);
     },

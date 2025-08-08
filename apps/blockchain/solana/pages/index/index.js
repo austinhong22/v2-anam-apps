@@ -8,6 +8,15 @@ let currentWallet = null;
 document.addEventListener("DOMContentLoaded", function () {
   console.log("Solana 지갑 페이지 로드됨");
 
+  // 우상단 버튼 이벤트 바인딩 (전역 함수 의존 제거)
+  const backBtn = document.getElementById('back-to-welcome-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try { showWelcomeScreen(); } catch (err) { console.error(err); }
+    });
+  }
+
   // Bridge API 초기화
   if (window.anam) {
     console.log("Bridge API 사용 가능");
@@ -91,10 +100,21 @@ function testLocalStorage() {
   console.log("현재 지갑 데이터:", walletData);
 }
 
+// 니모닉 정규화: 소문자, 다중 공백 제거, 앞뒤 공백 제거
+function normalizeMnemonic(text) {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(" ");
+}
+
 // 지갑 상태 확인
 function checkWalletStatus() {
   console.log("지갑 상태 확인 시작");
-  
+
   const walletData = localStorage.getItem("walletData");
   console.log("localStorage에서 가져온 데이터:", walletData);
 
@@ -202,8 +222,9 @@ async function importFromMnemonic() {
     return;
   }
 
-  const mnemonicInput = document.getElementById("mnemonic-input").value.trim();
-  console.log("입력된 니모닉:", mnemonicInput);
+  const rawInput = document.getElementById("mnemonic-input").value;
+  const mnemonicInput = normalizeMnemonic(rawInput);
+  console.log("입력된 니모닉(정규화):", mnemonicInput);
 
   if (!mnemonicInput) {
     showToast("니모닉을 입력해주세요");
@@ -451,6 +472,13 @@ function continueToWallet() {
 
 // 지갑 초기화
 function resetWallet() {
+  const confirmed = window.confirm(
+    "지갑을 초기화하시겠습니까?\n\n초기화하면 현재 브라우저의 지갑 데이터(localStorage)가 삭제됩니다. 백업한 니모닉이 없으면 복구할 수 없습니다."
+  );
+  if (!confirmed) {
+    return;
+  }
+
   localStorage.removeItem("walletData");
   currentWallet = null;
 
@@ -535,3 +563,25 @@ window.continueToWallet = continueToWallet;
 window.copyMnemonicLarge = copyMnemonicLarge;
 window.testTransaction = testTransaction;
 window.testLocalStorage = testLocalStorage;
+
+// 초기 화면으로 돌아가기 (데이터 삭제 없음)
+function showWelcomeScreen() {
+  // 메인 화면 숨김, 생성 화면 표시
+  const creation = document.getElementById("wallet-creation");
+  const mnemonic = document.getElementById("mnemonic-screen");
+  const main = document.getElementById("wallet-main");
+
+  if (creation) creation.style.display = "flex"; // flex로 표시
+  if (mnemonic) mnemonic.style.display = "none";
+  if (main) main.style.display = "none";
+
+  // 입력값 초기화(UX): 데이터는 유지하되 폼만 비움
+  const mnemonicInput = document.getElementById("mnemonic-input");
+  const privateKeyInput = document.getElementById("privatekey-input");
+  if (mnemonicInput) mnemonicInput.value = "";
+  if (privateKeyInput) privateKeyInput.value = "";
+
+  showToast("초기 화면으로 이동했습니다", "info");
+}
+
+window.showWelcomeScreen = showWelcomeScreen;
