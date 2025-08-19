@@ -128,8 +128,8 @@ function createTransactionElement(tx, index) {
   // 클릭 시 서명 복사
   txDiv.addEventListener('click', () => {
     if (tx.signature) {
-      navigator.clipboard.writeText(tx.signature);
-      showToast("트랜잭션 서명이 복사되었습니다");
+      const url = SolanaAdapter.getExplorerTxUrl(tx.signature);
+      window.open(url, '_blank');
     }
   });
 

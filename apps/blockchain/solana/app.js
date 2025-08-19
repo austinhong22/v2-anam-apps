@@ -453,13 +453,31 @@ class SolanaAdapter extends CoinAdapter {
 
   // RPC 연결 초기화
   async initProvider() {
-    if (!this.connection) {
-      this.connection = new solanaWeb3.Connection(
-        this.config.network.rpcEndpoint,
-        "confirmed"
-      );
+    // localStorage 네트워크 오버라이드 지원
+    let endpoint = this.config.network.rpcEndpoint;
+    try {
+      const stored = localStorage.getItem("networkConfig");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.rpcEndpoint) {
+          endpoint = parsed.rpcEndpoint;
+        }
+      }
+    } catch (_) {}
+
+    if (!this.connection || this.connection._rpcEndpoint !== endpoint) {
+      this.connection = new solanaWeb3.Connection(endpoint, "confirmed");
+      // _rpcEndpoint는 비공식 속성이므로 안전을 위해 별도 보관
+      this.connection._rpcEndpoint = endpoint;
     }
     return this.connection;
+  }
+
+  /** 네트워크 설정 저장 */
+  static setNetworkConfig({ rpcEndpoint, cluster }) {
+    const cfg = { rpcEndpoint, cluster: cluster || "mainnet-beta" };
+    localStorage.setItem("networkConfig", JSON.stringify(cfg));
+    return cfg;
   }
 
   /**
@@ -477,7 +495,7 @@ class SolanaAdapter extends CoinAdapter {
       // 12단어 니모닉 생성 (128비트 엔트로피)
       const mnemonic = bip39.generateMnemonic(128);
 
-      // 표준 파생 경로로 키페어 생성 (m/44'/501'/0'/0')
+      // 표준 파생 경로로 키페어 생성 (m/44'/501'/0'/0') - index 0
       const keypair = await keypairFromMnemonic(mnemonic, 0);
 
       // secretKey를 암호화하여 저장
@@ -489,6 +507,7 @@ class SolanaAdapter extends CoinAdapter {
         secretKey: keystore,
         publicKey: keypair.publicKey.toString(),
         mnemonic: mnemonic,
+        index: 0,
       });
     } catch (error) {
       console.error("지갑 생성 실패:", error);
@@ -764,8 +783,8 @@ class SolanaAdapter extends CoinAdapter {
         return Result.failure("유효하지 않은 니모닉입니다 (체크섬 오류)");
       }
 
-      // 표준 파생 경로로 Keypair 생성
-      const keypair = await keypairFromMnemonic(mnemonic);
+      // 표준 파생 경로로 Keypair 생성 (index 0)
+      const keypair = await keypairFromMnemonic(mnemonic, 0);
 
       // secretKey를 암호화하여 저장
       const secretKey = Array.from(keypair.secretKey);
@@ -776,9 +795,32 @@ class SolanaAdapter extends CoinAdapter {
         secretKey: keystore,
         mnemonic: mnemonic,
         publicKey: keypair.publicKey.toString(),
+        index: 0,
       });
     } catch (error) {
       console.error("니모닉 복구 실패:", error);
+      return Result.failure(error.message);
+    }
+  }
+
+  /**
+   * HD 파생: 니모닉 + index로 계정 생성
+   */
+  async deriveAccountFromMnemonic(mnemonic, index) {
+    try {
+      const { keypairFromMnemonic } = window.solanaWeb3 || {};
+      if (!keypairFromMnemonic) throw new Error("키 파생 유틸을 찾을 수 없습니다");
+      const keypair = await keypairFromMnemonic(mnemonic, index);
+      const secretKey = Array.from(keypair.secretKey);
+      const keystore = await window.anamUI.createKeystore(secretKey);
+      return Result.success({
+        index,
+        address: keypair.publicKey.toString(),
+        publicKey: keypair.publicKey.toString(),
+        secretKey: keystore,
+      });
+    } catch (error) {
+      console.error("HD 파생 실패:", error);
       return Result.failure(error.message);
     }
   }
@@ -943,6 +985,106 @@ class SolanaAdapter extends CoinAdapter {
         return Result.failure("잔액 또는 렌트/수수료가 부족합니다. 금액을 줄이거나 지갑에 SOL을 충전하세요.");
       }
       return Result.failure(msg);
+    }
+  }
+
+  // =========================== SPL TOKEN 유틸 ===========================
+  static TOKEN_PROGRAM_ID() {
+    return new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+  }
+  static ASSOCIATED_TOKEN_PROGRAM_ID() {
+    return new solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+  }
+
+  async getTokenAccountsByOwner(ownerAddress) {
+    try {
+      await this.initProvider();
+      const owner = new solanaWeb3.PublicKey(ownerAddress);
+      const resp = await this.connection.getParsedTokenAccountsByOwner(owner, { programId: SolanaAdapter.TOKEN_PROGRAM_ID() });
+      return Result.success(resp.value || []);
+    } catch (error) {
+      console.error("토큰 계정 조회 실패:", error);
+      return Result.failure("토큰 계정 조회 실패");
+    }
+  }
+
+  async getTokenBalance(ownerAddress, mintAddress) {
+    try {
+      const accounts = await this.getTokenAccountsByOwner(ownerAddress);
+      if (!accounts.success) return accounts;
+      const found = accounts.data.find((a) => a.account?.data?.parsed?.info?.mint === mintAddress);
+      if (!found) return Result.success({ amount: "0", decimals: 0 });
+      const tok = found.account.data.parsed.info.tokenAmount;
+      return Result.success({ amount: tok.amount, decimals: tok.decimals });
+    } catch (error) {
+      console.error("토큰 잔액 조회 실패:", error);
+      return Result.failure("토큰 잔액 조회 실패");
+    }
+  }
+
+  static getAssociatedTokenAddress(mint, owner) {
+    const seeds = [owner.toBuffer(), SolanaAdapter.TOKEN_PROGRAM_ID().toBuffer(), mint.toBuffer()];
+    const [addr] = solanaWeb3.PublicKey.findProgramAddressSync(seeds, SolanaAdapter.ASSOCIATED_TOKEN_PROGRAM_ID());
+    return addr;
+  }
+
+  async sendToken(mintAddress, toAddress, rawAmount) {
+    try {
+      await this.initProvider();
+      const walletData = JSON.parse(localStorage.getItem("walletData"));
+      if (!walletData || !walletData.secretKey) {
+        return Result.failure("지갑이 초기화되지 않았습니다");
+      }
+      const secretKey = await window.anamUI.decryptKeystore(walletData.secretKey);
+      const fromKeypair = solanaWeb3.Keypair.fromSecretKey(new Uint8Array(secretKey));
+
+      const mint = new solanaWeb3.PublicKey(mintAddress);
+      const owner = fromKeypair.publicKey;
+      const recipient = new solanaWeb3.PublicKey(toAddress);
+
+      // from/to ATA
+      const fromAta = SolanaAdapter.getAssociatedTokenAddress(mint, owner);
+      const toAta = SolanaAdapter.getAssociatedTokenAddress(mint, recipient);
+
+      // 잔액/decimals
+      const bal = await this.getTokenBalance(owner.toString(), mintAddress);
+      if (!bal.success) return bal;
+      const { decimals } = bal.data;
+      const amount = BigInt(Math.floor(Number(rawAmount) * Math.pow(10, decimals)));
+
+      // 전송 ix
+      const keys = [
+        { pubkey: fromAta, isSigner: false, isWritable: true },
+        { pubkey: toAta, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: false },
+      ];
+      const data = Uint8Array.of(3, ...new Uint8Array(new BigInt64Array([amount]).buffer)); // TokenInstruction::Transfer(3)
+      const ix = new solanaWeb3.TransactionInstruction({
+        programId: SolanaAdapter.TOKEN_PROGRAM_ID(),
+        keys,
+        data,
+      });
+
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash("confirmed");
+      const tx = new solanaWeb3.Transaction({ feePayer: owner, recentBlockhash: blockhash }).add(ix);
+      tx.sign(fromKeypair);
+      const sig = await this.connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, preflightCommitment: "confirmed" });
+      await this.connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      return Result.success({ signature: sig });
+    } catch (error) {
+      console.error("토큰 전송 실패:", error);
+      return Result.failure(error.message || "토큰 전송 실패");
+    }
+  }
+
+  static getExplorerTxUrl(signature) {
+    try {
+      const stored = localStorage.getItem("networkConfig");
+      const cluster = stored ? (JSON.parse(stored).cluster || "mainnet-beta") : (CoinConfig.network.cluster || "mainnet-beta");
+      const qs = cluster && cluster !== "mainnet" ? `?cluster=${encodeURIComponent(cluster)}` : "";
+      return `https://explorer.solana.com/tx/${signature}${qs}`;
+    } catch (_) {
+      return `https://explorer.solana.com/tx/${signature}`;
     }
   }
 

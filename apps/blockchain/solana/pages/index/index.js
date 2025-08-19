@@ -564,6 +564,23 @@ window.copyMnemonicLarge = copyMnemonicLarge;
 window.testTransaction = testTransaction;
 window.testLocalStorage = testLocalStorage;
 
+// 니모닉 확인 단계로 이동 (1번, 7번 단어 확인)
+function goToMnemonicVerify() {
+  if (!currentWallet || !currentWallet.mnemonic) {
+    showToast("니모닉이 없습니다");
+    return;
+  }
+  const words = currentWallet.mnemonic.split(/\s+/);
+  const idx1 = 0; // 1번째
+  const idx2 = 6; // 7번째
+  const payload = { idx1, idx2, w1: words[idx1], w2: words[idx2] };
+  localStorage.setItem("mnemonicVerify", JSON.stringify(payload));
+  // 검증 페이지로 이동
+  window.location.href = "verify.html";
+}
+
+window.goToMnemonicVerify = goToMnemonicVerify;
+
 // 초기 화면으로 돌아가기 (데이터 삭제 없음)
 function showWelcomeScreen() {
   // 메인 화면 숨김, 생성 화면 표시
