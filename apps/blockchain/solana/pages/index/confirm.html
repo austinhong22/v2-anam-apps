@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>니모닉 전체 확인</title>
+    <link rel="stylesheet" href="../../app.css" />
+    <style>
+      .card{max-width:760px;margin:24px auto;padding:20px;border-radius:12px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+      .row{display:flex;gap:8px;flex-wrap:wrap}
+      .inp{flex:1 0 31%;min-width:140px;padding:10px;border:2px solid #e0e0e0;border-radius:8px;margin:6px 0}
+      .actions{display:flex;gap:8px;margin-top:12px}
+      .btn{padding:12px 16px;border:0;border-radius:10px;cursor:pointer}
+      .btn-primary{background:var(--coin-gradient);color:#fff}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h2>니모닉 전체 확인</h2>
+        <p>12개 단어를 순서대로 입력하세요.</p>
+        <div id="inputs" class="row"></div>
+        <div class="actions">
+          <button class="btn" onclick="history.back()">뒤로</button>
+          <button class="btn btn-primary" onclick="confirmAll()">확인</button>
+        </div>
+      </div>
+    </div>
+    <script src="../../assets/solana-bundle.umd.cjs"></script>
+    <script src="../../app.js"></script>
+    <script>
+      function getWallet(){try{const s=localStorage.getItem('walletData');return s?JSON.parse(s):null}catch(_){return null}}
+      function build(){
+        const c=document.getElementById('inputs'); c.innerHTML='';
+        for(let i=0;i<12;i++){
+          const ip=document.createElement('input'); ip.className='inp'; ip.id='w'+i; ip.placeholder=(i+1)+'번째 단어'; c.appendChild(ip);
+        }
+      }
+      function confirmAll(){
+        const wd=getWallet(); if(!wd||!wd.mnemonic){alert('니모닉이 없습니다');return}
+        const target=wd.mnemonic.trim().toLowerCase().split(/\s+/);
+        const input=[]; for(let i=0;i<12;i++){ input.push((document.getElementById('w'+i).value||'').trim().toLowerCase()); }
+        const ok=input.length===target.length && input.every((v,idx)=>v===target[idx]);
+        if(!ok){ alert('단어가 일치하지 않습니다'); return; }
+        // 완료 처리 후 메인 진입
+        wd.status='completed'; localStorage.setItem('walletData', JSON.stringify(wd));
+        window.location.href='../index/index.html';
+      }
+      build();
+    </script>
+  </body>
+ </html>
+
