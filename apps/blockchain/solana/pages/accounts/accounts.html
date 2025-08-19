@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>계정</title>
+    <link rel="stylesheet" href="../../app.css" />
+    <style>
+      .page{max-width:720px;margin:0 auto;padding:16px}
+      .row{display:flex;gap:8px;margin:8px 0}
+      .item{padding:12px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+      .btn{padding:10px 12px;border:0;border-radius:8px;cursor:pointer}
+      .btn-primary{background:var(--coin-gradient);color:#fff}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page">
+        <h2>계정</h2>
+        <div class="row">
+          <button class="btn btn-primary" onclick="addAccount()">계정 추가</button>
+          <button class="btn" onclick="goBack()">뒤로</button>
+        </div>
+        <div id="list"></div>
+      </div>
+    </div>
+    <script src="../../assets/solana-bundle.umd.cjs"></script>
+    <script src="../../app.js"></script>
+    <script>
+      const KEY='walletAccounts';
+      const adapter=new SolanaAdapter(CoinConfig);
+      function load(){ try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):[]}catch(_){return []}}
+      function save(arr){ localStorage.setItem(KEY, JSON.stringify(arr||[])) }
+      function current(){ try{const s=localStorage.getItem('walletData');return s?JSON.parse(s):null}catch(_){return null} }
+      async function addAccount(){
+        const cur=current(); if(!cur||!cur.mnemonic){alert('니모닉이 필요합니다');return}
+        const arr=load(); const idx=arr.length; // 0부터 시작
+        const res=await adapter.deriveAccountFromMnemonic(cur.mnemonic, idx);
+        if(!res.success){alert('파생 실패: '+res.error);return}
+        const entry={ index: idx, address: res.data.address, secretKey: res.data.secretKey };
+        arr.push(entry); save(arr); await render();
+      }
+      function switchTo(index){
+        const arr=load(); const target=arr[index]; const cur=current(); if(!target||!cur){return}
+        // 현재 walletData를 선택 계정으로 교체 (mnemonic 유지)
+        const updated={...cur, address: target.address, publicKey: target.address, secretKey: target.secretKey, index: target.index, status:'completed'};
+        localStorage.setItem('walletData', JSON.stringify(updated));
+        alert('계정 전환 완료');
+      }
+      async function render(){
+        const list=document.getElementById('list'); list.innerHTML='';
+        const arr=load();
+        arr.forEach((a,i)=>{
+          const div=document.createElement('div'); div.className='item';
+          div.innerHTML=`<div>Account ${i+1}<br/><small>${a.address}</small></div><button class="btn" onclick="switchTo(${i})">전환</button>`;
+          list.appendChild(div);
+        });
+      }
+      function goBack(){ window.location.href='../index/index.html' }
+      render();
+    </script>
+  </body>
+ </html>
+

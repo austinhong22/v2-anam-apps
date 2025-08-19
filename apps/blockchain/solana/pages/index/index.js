@@ -416,6 +416,39 @@ function navigateToHistory() {
   }
 }
 
+// Tokens 페이지로 이동
+function navigateToTokens() {
+  if (window.anamUI && window.anamUI.navigateTo) {
+    window.anamUI.navigateTo("pages/tokens/tokens");
+  } else if (window.anam && window.anam.navigateTo) {
+    window.anam.navigateTo("pages/tokens/tokens");
+  } else {
+    window.location.href = "../tokens/tokens.html";
+  }
+}
+
+// Accounts 페이지로 이동
+function navigateToAccounts() {
+  if (window.anamUI && window.anamUI.navigateTo) {
+    window.anamUI.navigateTo("pages/accounts/accounts");
+  } else if (window.anam && window.anam.navigateTo) {
+    window.anam.navigateTo("pages/accounts/accounts");
+  } else {
+    window.location.href = "../accounts/accounts.html";
+  }
+}
+
+// Settings 페이지로 이동
+function navigateToSettings() {
+  if (window.anamUI && window.anamUI.navigateTo) {
+    window.anamUI.navigateTo("pages/settings/settings");
+  } else if (window.anam && window.anam.navigateTo) {
+    window.anam.navigateTo("pages/settings/settings");
+  } else {
+    window.location.href = "../settings/settings.html";
+  }
+}
+
 // 니모닉 표시
 function displayMnemonic() {
   if (!currentWallet || !currentWallet.mnemonic) {
@@ -558,6 +591,9 @@ window.importFromPrivateKey = importFromPrivateKey;
 window.navigateToSend = navigateToSend;
 window.navigateToReceive = navigateToReceive;
 window.navigateToHistory = navigateToHistory;
+window.navigateToTokens = navigateToTokens;
+window.navigateToAccounts = navigateToAccounts;
+window.navigateToSettings = navigateToSettings;
 window.resetWallet = resetWallet;
 window.continueToWallet = continueToWallet;
 window.copyMnemonicLarge = copyMnemonicLarge;

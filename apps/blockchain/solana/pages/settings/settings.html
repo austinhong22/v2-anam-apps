@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>설정</title>
+    <link rel="stylesheet" href="../../app.css" />
+    <style>
+      .page{max-width:720px;margin:0 auto;padding:16px}
+      .row{display:flex;gap:8px;margin:8px 0}
+      .btn{padding:10px 12px;border:0;border-radius:8px;cursor:pointer}
+      .btn-primary{background:var(--coin-gradient);color:#fff}
+      .note{font-size:12px;color:#666}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page">
+        <h2>네트워크</h2>
+        <div class="row">
+          <select id="preset" class="form-input">
+            <option value="mainnet">Mainnet</option>
+            <option value="testnet" selected>Testnet</option>
+            <option value="devnet">Devnet</option>
+          </select>
+        </div>
+        <div class="row">
+          <input id="rpc" class="form-input" placeholder="Custom RPC Endpoint (https://...)" />
+          <button class="btn" onclick="applyPreset()">프리셋</button>
+          <button class="btn btn-primary" onclick="saveNetwork()">저장</button>
+        </div>
+        <p class="note">저장 시 즉시 해당 RPC로 전환됩니다.</p>
+        <button class="btn" onclick="goBack()">뒤로</button>
+      </div>
+    </div>
+    <script src="../../assets/solana-bundle.umd.cjs"></script>
+    <script src="../../app.js"></script>
+    <script>
+      function applyPreset(){
+        const p=document.getElementById('preset').value;
+        const map={
+          mainnet:'https://api.mainnet-beta.solana.com',
+          testnet:'https://api.testnet.solana.com',
+          devnet:'https://api.devnet.solana.com'
+        };
+        document.getElementById('rpc').value = map[p] || '';
+      }
+      function saveNetwork(){
+        const rpc=document.getElementById('rpc').value.trim();
+        const preset=document.getElementById('preset').value;
+        if(!rpc){ alert('RPC를 입력하세요'); return; }
+        SolanaAdapter.setNetworkConfig({ rpcEndpoint: rpc, cluster: preset==='mainnet'?'mainnet-beta':preset });
+        alert('저장되었습니다');
+      }
+      function goBack(){ window.location.href='../index/index.html' }
+      // 초기 로드 시 현재 설정 반영
+      (function(){
+        try{const s=localStorage.getItem('networkConfig'); if(s){const cfg=JSON.parse(s); document.getElementById('rpc').value=cfg.rpcEndpoint||''; document.getElementById('preset').value=(cfg.cluster||'mainnet-beta').replace('mainnet-beta','mainnet'); }}catch(_){ }
+      })();
+    </script>
+  </body>
+ </html>
+

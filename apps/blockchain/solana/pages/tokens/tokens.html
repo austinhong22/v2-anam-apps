@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>토큰</title>
+    <link rel="stylesheet" href="../../app.css" />
+    <style>
+      .page{max-width:720px;margin:0 auto;padding:16px}
+      .row{display:flex;gap:8px;margin:8px 0}
+      .list{margin-top:12px}
+      .token-item{padding:12px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+      .btn{padding:10px 12px;border:0;border-radius:8px;cursor:pointer}
+      .btn-primary{background:var(--coin-gradient);color:#fff}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page">
+        <h2>토큰</h2>
+        <div class="row">
+          <input id="mint" class="form-input" placeholder="토큰 Mint 주소" />
+          <button class="btn" onclick="addToken()">가져오기</button>
+        </div>
+        <div id="list" class="list"></div>
+        <div class="row">
+          <input id="to" class="form-input" placeholder="받는 주소" />
+          <input id="amount" class="form-input" placeholder="금액" />
+          <button class="btn btn-primary" onclick="sendToken()">전송</button>
+        </div>
+        <button class="btn" onclick="goBack()">뒤로</button>
+      </div>
+    </div>
+
+    <script src="../../assets/solana-bundle.umd.cjs"></script>
+    <script src="../../app.js"></script>
+    <script>
+      const TOKENS_KEY = 'customTokens';
+      const adapter = new SolanaAdapter(CoinConfig);
+      function loadTokens(){
+        try{const s=localStorage.getItem(TOKENS_KEY);return s?JSON.parse(s):[]}catch(_){return []}
+      }
+      function saveTokens(arr){localStorage.setItem(TOKENS_KEY, JSON.stringify(arr||[]))}
+      async function render(){
+        const list=document.getElementById('list'); list.innerHTML='';
+        const arr=loadTokens();
+        for(const mint of arr){
+          const li=document.createElement('div'); li.className='token-item';
+          let balanceText='-';
+          try{const wd=JSON.parse(localStorage.getItem('walletData')||'{}');
+            const bal=await adapter.getTokenBalance(wd.address, mint);
+            if(bal.success){const v=Number(bal.data.amount)/Math.pow(10, bal.data.decimals||0); balanceText=v.toFixed(6)}
+          }catch(_){ }
+          li.innerHTML = `<div>${mint}</div><div>${balanceText}</div>`;
+          list.appendChild(li);
+        }
+      }
+      async function addToken(){
+        const mint=document.getElementById('mint').value.trim(); if(!mint) return;
+        const arr=loadTokens(); if(!arr.includes(mint)){arr.push(mint); saveTokens(arr);} await render();
+      }
+      async function sendToken(){
+        const mint=document.getElementById('mint').value.trim();
+        const to=document.getElementById('to').value.trim();
+        const amount=document.getElementById('amount').value.trim();
+        if(!mint||!to||!amount){alert('모두 입력하세요');return}
+        const res=await adapter.sendToken(mint, to, amount);
+        alert(res.success?('전송 성공: '+res.data.signature):('전송 실패: '+res.error));
+      }
+      function goBack(){ window.location.href='../index/index.html' }
+      render();
+    </script>
+  </body>
+ </html>
+
