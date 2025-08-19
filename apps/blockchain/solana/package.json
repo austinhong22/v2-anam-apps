@@ -8,6 +8,9 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "bundle:build": "cd ../../../bundler/blockchain/solana-bundler && npm install --no-audit --no-fund && npm run build",
+    "bundle:copy": "cp ../../../bundler/blockchain/solana-bundler/dist/solana-bundle.umd.cjs ./assets/solana-bundle.umd.cjs",
+    "build:prod": "npm run bundle:build && npm run bundle:copy && vite build",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage"
