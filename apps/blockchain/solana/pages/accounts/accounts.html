@@ -50,11 +50,17 @@
       async function render(){
         const list=document.getElementById('list'); list.innerHTML='';
         const arr=load();
-        arr.forEach((a,i)=>{
+        for(let i=0;i<arr.length;i++){
+          const a=arr[i];
+          let bal='-';
+          try{
+            const r=await adapter.getBalance(a.address);
+            if(r.success){ bal=Number(r.data).toFixed(6); }
+          }catch(_){ }
           const div=document.createElement('div'); div.className='item';
-          div.innerHTML=`<div>Account ${i+1}<br/><small>${a.address}</small></div><button class="btn" onclick="switchTo(${i})">전환</button>`;
+          div.innerHTML=`<div>Account ${i+1} <span style="margin-left:8px;background:#eee;padding:2px 6px;border-radius:12px;font-size:12px;">${bal} SOL</span><br/><small>${a.address}</small></div><button class="btn" onclick="switchTo(${i})">전환</button>`;
           list.appendChild(div);
-        });
+        }
       }
       function goBack(){ window.location.href='../index/index.html' }
       render();

@@ -58,6 +58,25 @@
         </div>
       </div>
 
+      <!-- 니모닉 경고 단계 화면 -->
+      <div id="mnemonic-warning" class="wallet-screen" style="display:none;">
+        <div class="mnemonic-content">
+          <div class="mnemonic-header">
+            <h2>중요: 시드 문구 경고</h2>
+            <p>다음 내용을 이해하고 동의해야 시드 문구를 생성할 수 있습니다.</p>
+          </div>
+          <div class="mnemonic-card">
+            <label style="display:block;margin-bottom:8px;"><input type="checkbox" id="wchk1" onchange="updateWarnProceedState()"/> 시드 문구를 분실하면 복구할 수 없습니다.</label>
+            <label style="display:block;margin-bottom:8px;"><input type="checkbox" id="wchk2" onchange="updateWarnProceedState()"/> 누구와도 시드 문구/개인키를 공유하지 않겠습니다.</label>
+            <label style="display:block;margin-bottom:8px;"><input type="checkbox" id="wchk3" onchange="updateWarnProceedState()"/> 악성 사이트/앱에 시드 문구를 입력하지 않겠습니다.</label>
+            <div style="margin-top:12px;display:flex;gap:8px;">
+              <button class="continue-btn" onclick="showWelcomeScreen()">뒤로</button>
+              <button id="warn-proceed" class="continue-btn" onclick="proceedCreateWallet()" disabled>니모닉 생성하기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 니모닉 표시 화면 -->
       <div id="mnemonic-screen" class="wallet-screen" style="display: none;">
         <div class="mnemonic-content">

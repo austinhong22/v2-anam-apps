@@ -147,12 +147,26 @@ function checkWalletStatus() {
       resetWallet();
     }
   } else {
-    console.log("localStorage에 지갑 데이터 없음 - 첫 화면 표시");
-    document.getElementById("wallet-creation").style.display = "block";
+    console.log("localStorage에 지갑 데이터 없음 - 경고 단계 표시");
+    document.getElementById("mnemonic-warning").style.display = "block";
     document.getElementById("mnemonic-screen").style.display = "none";
     document.getElementById("wallet-main").style.display = "none";
   }
 }
+// 경고 체크 업데이트
+function updateWarnProceedState(){
+  const a=document.getElementById('wchk1').checked;
+  const b=document.getElementById('wchk2').checked;
+  const c=document.getElementById('wchk3').checked;
+  document.getElementById('warn-proceed').disabled = !(a && b && c);
+}
+
+// 경고 통과 후 실제 생성 화면으로 이동
+function proceedCreateWallet(){
+  document.getElementById('mnemonic-warning').style.display='none';
+  document.getElementById('wallet-creation').style.display='block';
+}
+
 
 // 새 지갑 생성
 async function createWallet() {
