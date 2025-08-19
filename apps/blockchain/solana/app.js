@@ -878,24 +878,50 @@ class SolanaAdapter extends CoinAdapter {
         })
       );
 
-      // 최근 블록해시 가져오기
-      const { blockhash } = await this.connection.getLatestBlockhash();
+      // 최근 블록해시 가져오기 (확정 상태)
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash("confirmed");
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = fromKeypair.publicKey;
+
+      // 수수료/잔액 사전 검증
+      try {
+        const balanceLamports = await this.connection.getBalance(fromKeypair.publicKey, "confirmed");
+        const feeForMessage = await this.connection.getFeeForMessage(transaction.compileMessage(), "confirmed");
+        const feeLamports = (feeForMessage && typeof feeForMessage.value === "number") ? feeForMessage.value : 5000;
+        const required = parseInt(lamports) + feeLamports;
+        if (balanceLamports < required) {
+          return Result.failure("잔액 또는 수수료가 부족합니다 (예상 수수료: " + (feeLamports / solanaWeb3.LAMPORTS_PER_SOL).toFixed(9) + " SOL)");
+        }
+      } catch (precheckErr) {
+        // 수수료 계산 실패는 치명적이지 않음
+      }
 
       // 트랜잭션 서명
       transaction.sign(fromKeypair);
 
-      // 트랜잭션 전송
-      const signature = await this.connection.sendRawTransaction(
-        transaction.serialize()
-      );
+      // 트랜잭션 전송 (프리플라이트 포함)
+      const serialized = transaction.serialize();
+      const signature = await this.connection.sendRawTransaction(serialized, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+        maxRetries: 3,
+      });
 
-      // 트랜잭션 확인 대기
-      const confirmation = await this.connection.confirmTransaction(signature);
-
-      if (confirmation.value.err) {
-        return Result.failure("트랜잭션 전송에 실패했습니다");
+      // 트랜잭션 확인 대기 (신형 API 우선, 실패 시 구형으로 폴백)
+      try {
+        const confirmation = await this.connection.confirmTransaction(
+          { signature, blockhash, lastValidBlockHeight },
+          "confirmed"
+        );
+        if (confirmation.value && confirmation.value.err) {
+          return Result.failure("트랜잭션 전송에 실패했습니다");
+        }
+      } catch (confirmErr) {
+        // 구형 시그니처 방식 폴백
+        const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+        if (confirmation.value && confirmation.value.err) {
+          return Result.failure("트랜잭션 전송에 실패했습니다");
+        }
       }
 
       return Result.success({
@@ -903,8 +929,20 @@ class SolanaAdapter extends CoinAdapter {
         signature: signature,
       });
     } catch (error) {
+      try {
+        if (error && typeof error.getLogs === "function") {
+          const logs = await error.getLogs(this.connection);
+          console.error("트랜잭션 실패 로그:", logs);
+        } else if (error && error.logs) {
+          console.error("트랜잭션 실패 로그:", error.logs);
+        }
+      } catch (_) {}
       console.error("트랜잭션 전송 실패:", error);
-      return Result.failure(error.message || "트랜잭션 전송에 실패했습니다");
+      const msg = (error && error.message) ? error.message : "트랜잭션 전송에 실패했습니다";
+      if (msg.toLowerCase().includes("insufficient funds") || msg.toLowerCase().includes("rent")) {
+        return Result.failure("잔액 또는 렌트/수수료가 부족합니다. 금액을 줄이거나 지갑에 SOL을 충전하세요.");
+      }
+      return Result.failure(msg);
     }
   }
 
@@ -1199,7 +1237,11 @@ window.showToast = (message, type = "info") => {
 // 잔액을 사람이 읽기 쉬운 형식으로 변환
 window.formatBalance = (balance, decimals = 9) => {
   const value = Number(balance);
-  return value.toFixed(4);
+  // 소액 전송 시 변화를 보기 위해 표시 정밀도를 높임
+  // 기본 6자리로 표시, 필요시 9자리까지 확장 가능
+  if (Number.isNaN(value)) return "0.000000";
+  const fixed = value.toFixed(6);
+  return fixed;
 };
 
 // 금액을 lamports로 변환

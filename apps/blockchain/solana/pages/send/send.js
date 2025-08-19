@@ -111,7 +111,18 @@ async function confirmSend() {
     const balanceResult = await adapter.getBalance(currentWallet.address);
     if (balanceResult.success) {
       const availableBalance = parseFloat(balanceResult.data);
-      if (amountValue > availableBalance) {
+
+      // 네트워크 기본 수수료 추정치 조회 후, 금액+수수료가 잔액 이하인지 확인
+      let estimatedFeeLamports = 5000; // 기본값
+      try {
+        const feeResult = await adapter.getGasPrice();
+        if (feeResult.success && feeResult.data?.medium) {
+          estimatedFeeLamports = parseInt(feeResult.data.medium, 10);
+        }
+      } catch (e) {}
+
+      const totalNeeded = amountValue + (estimatedFeeLamports / solanaWeb3.LAMPORTS_PER_SOL);
+      if (totalNeeded > availableBalance) {
         showToast("잔액이 부족합니다");
         return;
       }
