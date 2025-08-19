@@ -473,34 +473,18 @@ function copyMnemonicLarge() {
 
 
 
-// 지갑 화면으로 계속하기
+// 지갑 화면으로 계속하기: 니모닉 확인 페이지로 이동(검증 강제)
 function continueToWallet() {
-  console.log("지갑 화면으로 계속하기 시작");
-  console.log("현재 지갑:", currentWallet);
-  
-  // 지갑 상태를 완료로 변경
-  if (currentWallet) {
-    currentWallet.status = "completed";
-    
-    try {
-      localStorage.setItem("walletData", JSON.stringify(currentWallet));
-      console.log("지갑 상태 업데이트 성공");
-      
-      // 저장 확인
-      const savedData = localStorage.getItem("walletData");
-      console.log("저장 확인:", savedData ? "성공" : "실패");
-    } catch (error) {
-      console.error("지갑 상태 업데이트 실패:", error);
-    }
-  } else {
-    console.error("currentWallet이 없습니다");
+  if (!currentWallet || !currentWallet.mnemonic) {
+    showToast("니모닉이 없습니다");
+    return;
   }
-  
-  document.getElementById("mnemonic-screen").style.display = "none";
-  document.getElementById("wallet-main").style.display = "block";
-  
-  displayWalletInfo();
-  updateBalance();
+  const words = currentWallet.mnemonic.split(/\s+/);
+  const idx1 = 0;
+  const idx2 = 6;
+  const payload = { idx1, idx2, w1: words[idx1], w2: words[idx2] };
+  localStorage.setItem("mnemonicVerify", JSON.stringify(payload));
+  window.location.href = "verify.html";
 }
 
 // 지갑 초기화

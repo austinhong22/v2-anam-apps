@@ -51,6 +51,7 @@
         if(w1===p.w1 && w2===p.w2){
           // 완료 표시
           try{const wd=localStorage.getItem('walletData');if(wd){const obj=JSON.parse(wd);obj.status='completed';localStorage.setItem('walletData',JSON.stringify(obj));}}catch(_){ }
+          // 메인 진입
           window.location.href='../index/index.html';
         }else{
           alert('단어가 일치하지 않습니다');
